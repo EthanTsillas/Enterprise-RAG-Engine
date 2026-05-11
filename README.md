@@ -68,7 +68,8 @@ docs/
 ### 3. Set your OpenAI API key
 
 ```bash
-export OPENAI_API_KEY="your_key_here"
+inside .env file you create add:
+OPENAI_API_KEY="your_api_key_here"
 ```
 
 ### 4. Run the demo
