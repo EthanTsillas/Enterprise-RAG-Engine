@@ -11,7 +11,7 @@ with no vector database dependencies.
 import os
 import numpy as np
 from typing import List, Dict, Tuple, Optional
-from sentence_transformers import SentenceTransformer
+from openai import OpenAI
 
 
 # ---------------------------------------------------------------------------
@@ -93,26 +93,27 @@ def create_chunks(
 # Embedding
 # ---------------------------------------------------------------------------
 
-def embed_chunks(
-    chunks: List[Dict],
-    model_name: str = "all-MiniLM-L6-v2"
-) -> Tuple[SentenceTransformer, np.ndarray]:
+def embed_chunks(chunks, model_name="text-embedding-3-small"):
     """
-    Embed all chunks using a SentenceTransformer model.
+    Embed chunks using OpenAI embeddings instead of a local SentenceTransformer model.
+    This is much lighter for free deployment.
+    """
+    client = OpenAI()
 
-    Returns:
-        model:      The loaded SentenceTransformer.
-        embeddings: NumPy array of shape (n_chunks, embedding_dim).
-    """
-    model = SentenceTransformer(model_name)
     texts = [chunk["text"] for chunk in chunks]
-    embeddings = model.encode(texts, convert_to_numpy=True, show_progress_bar=False)
-    return model, embeddings
 
+    response = client.embeddings.create(
+        model=model_name,
+        input=texts
+    )
 
-# ---------------------------------------------------------------------------
-# Retrieval — cosine similarity from scratch (no sklearn, no faiss)
-# ---------------------------------------------------------------------------
+    embeddings = np.array(
+        [item.embedding for item in response.data],
+        dtype=np.float32
+    )
+
+    return client, embeddings
+    
 
 def cosine_similarity(query_vector: np.ndarray, matrix: np.ndarray) -> np.ndarray:
     """
@@ -133,17 +134,25 @@ def cosine_similarity(query_vector: np.ndarray, matrix: np.ndarray) -> np.ndarra
 
 def retrieve(
     question: str,
-    model: SentenceTransformer,
+    model,
     embeddings: np.ndarray,
     chunks: List[Dict],
     top_k: int = 3
 ) -> List[Dict]:
     """
     Retrieve the top_k most relevant chunks for a question.
-
-    Returns chunks sorted by cosine similarity, each with an added "score" field.
     """
-    question_embedding = model.encode(question, convert_to_numpy=True)
+
+    response = model.embeddings.create(
+        model="text-embedding-3-small",
+        input=question
+    )
+
+    question_embedding = np.array(
+        response.data[0].embedding,
+        dtype=np.float32
+    )
+
     scores = cosine_similarity(question_embedding, embeddings)
     top_indices = np.argsort(scores)[::-1][:top_k]
 
@@ -152,6 +161,7 @@ def retrieve(
         result = chunks[idx].copy()
         result["score"] = float(scores[idx])
         results.append(result)
+
     return results
 
 
@@ -262,7 +272,7 @@ def generate_answer_no_context(
 
 def compare_rag_vs_base(
     question: str,
-    model: SentenceTransformer,
+    model,
     embeddings: np.ndarray,
     chunks: List[Dict],
     top_k: int = 3,
