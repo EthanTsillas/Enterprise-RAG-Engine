@@ -32,7 +32,7 @@ load_dotenv()
 
 DOCS_FOLDER = "docs"
 TOP_K = 3
-MODEL_NAME = "all-MiniLM-L6-v2"
+MODEL_NAME = "text-embedding-3-small"
 OPENAI_MODEL = "gpt-4o-mini"
 
 DEMO_QUESTIONS = [
