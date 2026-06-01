@@ -3,16 +3,20 @@ demo.py
 
 Demonstrates the RAG engine end-to-end:
   1. Load documents from docs/
-  2. Chunk and embed
-  3. Answer questions with retrieval augmentation
-  4. A/B compare RAG vs base LLM (no context)
+  2. Chunk documents
+  3. Create OpenAI embeddings
+  4. Retrieve relevant chunks with cosine similarity
+  5. Answer questions with retrieval augmentation
+  6. A/B compare RAG vs base LLM
 
 Usage:
-    # With OpenAI (recommended):
-    Add openai api key in a .env file
+    Add your OpenAI API key in a .env file:
+    OPENAI_API_KEY="your_api_key_here"
+
     python demo.py
 
-    # Without OpenAI (retrieval-only mode):
+    # Retrieval-only mode:
+    # Skips GPT answer generation but still uses OpenAI embeddings.
     python demo.py --no-llm
 """
 
@@ -32,7 +36,7 @@ load_dotenv()
 
 DOCS_FOLDER = "docs"
 TOP_K = 3
-MODEL_NAME = "all-MiniLM-L6-v2"
+MODEL_NAME = "text-embedding-3-small"
 OPENAI_MODEL = "gpt-4o-mini"
 
 DEMO_QUESTIONS = [
@@ -109,7 +113,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--no-llm",
         action="store_true",
-        help="Run in retrieval-only mode without calling the OpenAI API"
+        help="Run without LLM generation; still uses OpenAI embeddings"
     )
     args = parser.parse_args()
     run_demo(use_llm=not args.no_llm)
